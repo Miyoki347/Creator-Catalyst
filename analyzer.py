@@ -5,93 +5,94 @@ class Analyzer:
     def __init__(self):
         pass
 
-    def analyze_data(self, df):
+    def analyze_data(self, df, has_date=True, target_audience="", pain_points=""):
         """
-        データを多角的に分析し、スパイク検知とアクション生成を行う。
+        データを分析し、KPI、スパイク、トップコンテンツ、および具体的なアクションプランを返す。
         """
-        analysis_results = {
-            'summary_metrics': {},
-            'spikes': [],
-            'top_content': [],
-            'actions': []
-        }
-
-        # 1. 概要指標（最新日 vs 前週平均など）
-        latest_value = df['metric'].iloc[-1]
-        last_7_days_avg = df['metric'].iloc[-8:-1].mean() if len(df) > 7 else df['metric'].mean()
-        wow_growth = ((latest_value / last_7_days_avg) - 1) * 100 if last_7_days_avg > 0 else 0
+        summary_metrics = {}
+        spikes = []
+        top_content = {}
         
-        analysis_results['summary_metrics'] = {
-            'latest_value': latest_value,
-            'avg_value': last_7_days_avg,
-            'wow_growth': wow_growth
+        if has_date:
+            # 時系列分析
+            summary_metrics['latest_value'] = df['metric'].iloc[-1]
+            summary_metrics['avg_value'] = df['metric'].mean()
+            
+            # 前週比 (WoW)
+            if len(df) >= 14:
+                last_week = df['metric'].iloc[-7:].sum()
+                prev_week = df['metric'].iloc[-14:-7].sum()
+                if prev_week > 0:
+                    summary_metrics['wow_growth'] = ((last_week - prev_week) / prev_week) * 100
+                else:
+                    summary_metrics['wow_growth'] = 0
+            else:
+                summary_metrics['wow_growth'] = 0
+                
+            # スパイク検出 (平均+2標準偏差)
+            threshold = df['metric'].mean() + 2 * df['metric'].std()
+            spike_df = df[df['metric'] > threshold]
+            for _, row in spike_df.iterrows():
+                spikes.append({'date': row['date'], 'value': row['metric']})
+        else:
+            # 累積分析 (重複を排除して集計)
+            summary_metrics['total_value'] = df['metric'].sum()
+            summary_metrics['avg_per_content'] = df['metric'].mean()
+            summary_metrics['content_count'] = len(df)
+            
+            # コンテンツごとに集計してトップ5を抽出
+            grouped = df.groupby('content')['metric'].sum().sort_values(ascending=False).head(5)
+            for content_name, val in grouped.items():
+                top_content[content_name] = val
+
+        # 収益化ポテンシャル（簡易計算）
+        score = min(100, int(df['metric'].mean() / 10))
+        status = "要改善" if score < 30 else "成長中" if score < 70 else "高ポテンシャル"
+        monetization = {'score': score, 'status': status}
+
+        # アクションプランの生成 (超具体化)
+        actions = self._generate_specific_actions(df, target_audience, pain_points)
+
+        return {
+            'summary_metrics': summary_metrics,
+            'spikes': spikes,
+            'top_content': top_content,
+            'monetization': monetization,
+            'actions': actions
         }
 
-        # 2. ✨ あなたがバズった瞬間（スパイク検出）
-        mean_val = df['metric'].mean()
-        std_val = df['metric'].std()
-        if std_val > 0:
-            df['z_score'] = (df['metric'] - mean_val) / std_val
-            # Z-score > 2 をスパイクと見なす
-            spikes_df = df[df['z_score'] > 2].copy()
-            for _, row in spikes_df.iterrows():
-                analysis_results['spikes'].append({
-                    'date': row['date'],
-                    'value': row['metric'],
-                    'content': row.get('content', 'Unknown'),
-                    'z_score': row['z_score']
-                })
-
-        # 3. 📈 伸びのきっかけになった動画（寄与度分析）
-        if df['content'].nunique() > 1:
-            # Overall以外のコンテンツを集計
-            content_df = df[df['content'] != 'Overall']
-            if not content_df.empty:
-                top_content = content_df.groupby('content')['metric'].sum().sort_values(ascending=False).head(5)
-                analysis_results['top_content'] = top_content.to_dict()
-
-        # 4. 💡 次にやるといいこと（戦略提案 / アクションプラン）
-        analysis_results['actions'] = self.generate_strategic_actions(df, analysis_results)
-
-        return analysis_results
-
-    def generate_strategic_actions(self, df, analysis):
+    def _generate_specific_actions(self, df, target, pain):
         """
-        分析結果に基づき、即実行可能な具体的アクションを生成する。
+        ターゲットと悩みに基づき、具体的（日本語）なアクションを3つ生成する。
         """
         actions = []
-        metrics = analysis['summary_metrics']
-        spikes = analysis['spikes']
-
-        # ロジック1: 最近大きなスパイクがあった場合
-        if len(spikes) > 0:
-            recent_spike = spikes[-1]
-            spike_content = recent_spike['content']
-            
-            # スパイクの要因分析（仮説）
-            actions.append({
-                "title": f"【続編制作】「{spike_content}」の深掘り（リテンション / 継続率向上）",
-                "detail": f"データによると、直近の「{spike_content}」で統計的に有意なバズ（スパイク）を検知しました。このトピックは視聴者の関心が極めて高い『特異点』です。同じ切り口、または逆の視点での続編を48時間以内に構成し、ファンの定着（リテンション）を狙いましょう。"
-            })
         
-        # ロジック2: 全体的な傾向（WoW%が正の場合）
-        if metrics['wow_growth'] > 10:
-             actions.append({
-                "title": "【拡散ブースト】ショート展開による新規流入（新規獲得 / アクquisition）",
-                "detail": f"前週比+{metrics['wow_growth']:.1f}%の急成長を記録しています。メインコンテンツの中から『最も心が躍る瞬間（キラーコンテンツ）』を切り出し、ショート動画へ展開することで、爆発的な新規層の獲得が可能です。"
-            })
-        else:
-            actions.append({
-                "title": "【安定成長】21時の投稿固定（エンゲージメント最適化）",
-                "detail": "現在、成長が安定フェーズにあります。視聴者のライフスタイルに合わせた『21時』に投稿を固定することで、初動の視聴密度（エンゲージメント密度）を高め、アルゴリズムによる推奨を強化できます。"
-            })
+        # デフォルト値の設定
+        target = target if target else "全般的な視聴者"
+        pain = pain if pain else "再生数の伸び悩み"
 
-        # ロジック3: クオリティ/CTA
+        # メトリクスに基づいた分析
+        avg_metric = df['metric'].mean()
+        max_metric = df['metric'].max()
+        
+        # 1. コンテンツ構成へのアドバイス
         actions.append({
-            "title": "【視聴維持率の改善】冒頭15秒でのメリット提示（PREP法）",
-            "detail": "次の動画/記事では、『冒頭ですぐに結論を言う（P）』構成を徹底してください。視聴者が『この動画を見続けてくれる割合（視聴維持率）』を10%改善できる余地があります。"
+            "title": f"【{target}向け】冒頭15秒の「引き」を強化",
+            "detail": f"「{pain}」を解決するため、動画開始直後にターゲットが自分事化できる問いかけを行ってください。データによると平均数値は {avg_metric:.0f} ですが、最大値 {max_metric:.0f} を出した時の構成を分析し、最初の数秒に最も重要な情報を凝縮しましょう。"
         })
 
-        return actions[:3] # 常に3つ返す
+        # 2. 離脱ポイントへの具体的指示
+        actions.append({
+            "title": "中盤の離脱を防ぐ「予告型」の差し込み",
+            "detail": f"ターゲットが「{target}」であれば、動画の3分地点（中盤）で後半のハイライトを0.5秒だけ見せる「チラ見せ」を導入してください。これにより、{pain}の原因である視聴維持率の低下を物理的に食い止めます。"
+        })
+
+        # 3. タイトル・サムネイルの改善
+        actions.append({
+            "title": "ターゲットの「不満」を突くタイトル変更",
+            "detail": f"「{pain}」を抱える視聴者は、解決策を求めています。タイトルを『〇〇する方法』から『ターゲットが知らない〇〇の落とし穴』のように、痛点を突く形に明日書き換えてください。クリック率(CTR)の向上が見込めます。"
+        })
+
+        return actions[:3]
 
 analyzer = Analyzer()
