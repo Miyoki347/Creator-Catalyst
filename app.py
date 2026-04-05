@@ -22,18 +22,15 @@ with st.sidebar:
     is_dark = st.toggle("🌙 ダークモードに切り替え", value=(st.session_state.theme == 'Dark'))
     st.session_state.theme = 'Dark' if is_dark else 'Light'
     
-    # ブランドボックス全体のコンテナ
     st.markdown('<div class="sidebar-brand-area">', unsafe_allow_html=True)
     
-    # 1. マスコット (完全に中央配置するためのコンテナ)
-    st.markdown('<div class="mascot-wrapper">', unsafe_allow_html=True)
+    st.markdown('<div class="logo-wrapper">', unsafe_allow_html=True)
     try:
-        st.image("Creator_Catalyst_icon_transparent.png", use_container_width=True)
+        st.image("Creator_Catalyst_Official_Logo.png", use_container_width=True)
     except:
-        st.markdown('<div style="width:160px;height:160px;background:#333;border-radius:50%;margin:auto;">Icon</div>', unsafe_allow_html=True)
+        st.markdown('<div style="width:160px;height:160px;background:#333;border-radius:50%;margin:auto;">Logo</div>', unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
     
-    # 2. タイトル & サブタイトル
     st.markdown('<h1 class="brand-title-main">Creator Catalyst</h1>', unsafe_allow_html=True)
     st.markdown('<p class="brand-subtitle-sub">CONTENT ANALYTICS<br>&<br>GROWTH AI</p>', unsafe_allow_html=True)
     
@@ -75,46 +72,43 @@ placeholder_styles = """
 """
 
 brand_styles = """
-    /* サイドバーブランドコンテナ */
     .sidebar-brand-area {
-        text-align: center;
-        padding: 10px 0;
-        width: 100%;
+        text-align: center; padding: 10px 0; width: 100%;
     }
-    
-    /* マスコットの完全中央配置 */
-    .mascot-wrapper {
-        display: block;
-        margin-left: auto;
-        margin-right: auto;
-        width: 160px; /* サイズ固定 */
-        margin-bottom: 15px;
+    .logo-wrapper {
+        display: block; margin-left: auto; margin-right: auto; width: 160px; margin-bottom: 15px;
     }
-    .mascot-wrapper img {
+    .logo-wrapper img {
         filter: drop-shadow(0 0 15px #007BFF) !important;
-        border-radius: 50% !important;
     }
-    
-    /* タイトル（より「タイトル」らしく） */
     .brand-title-main {
-        font-size: 2.2rem !important; /* サイズアップ */
-        font-weight: 900 !important;
-        margin: 5px 0 !important;
-        letter-spacing: -1px !important;
-        text-align: center !important;
+        font-size: 2.2rem !important; font-weight: 900 !important; margin: 5px 0 !important;
+        letter-spacing: -1px !important; text-align: center !important;
+    }
+    .brand-subtitle-sub {
+        font-size: 0.7rem !important; font-weight: 600 !important; letter-spacing: 3px !important;
+        line-height: 1.6 !important; margin-top: 5px !important; margin-bottom: 25px !important;
+        text-transform: uppercase; opacity: 0.8 !important; text-align: center !important;
+    }
+    .main-title-gradient {
+        background: linear-gradient(to right, #007BFF, #9370DB);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        color: transparent;
+        font-size: 3.5rem;
+        font-weight: 900;
+        margin-bottom: 20px;
+        line-height: 1.2;
+        display: inline-block;
     }
     
-    /* サブタイトル（より「サブタイトル」らしく） */
-    .brand-subtitle-sub {
-        font-size: 0.7rem !important; /* 少し小さく */
-        font-weight: 600 !important;
-        letter-spacing: 3px !important; /* 文字間隔を広く */
-        line-height: 1.6 !important;
-        margin-top: 5px !important;
-        margin-bottom: 25px !important;
-        text-transform: uppercase;
-        opacity: 0.8 !important;
-        text-align: center !important;
+    /* 常時表示を確保するための複数の堅牢なセレクター（トグルの外枠） */
+    div[data-testid="stSidebar"] div[data-testid="stCheckbox"] label div:first-child,
+    div[data-testid="stSidebar"] div[data-testid="stToggle"] label div:first-child,
+    div[data-testid="stSidebar"] label div[class*="st-bg"] {
+        border: 1px solid #999999 !important;
+        box-shadow: 0 0 0 1px #999999 !important; /* border 以外のアプローチも追加 */
     }
 """
 
@@ -133,6 +127,9 @@ if st.session_state.theme == 'Dark':
             background-color: #1E1E1E !important;
             color: #FFFFFF !important;
             border: 1px solid #444 !important;
+        }}
+        [data-testid="stFileUploader"] label p, [data-testid="stFileUploader"] section div {{
+            color: #FFFFFF !important;
         }}
         .brand-title-main {{
             color: #FFFFFF !important;
@@ -184,10 +181,7 @@ else:
 st.markdown(theme_css, unsafe_allow_html=True)
 
 # --- Main Page Content ---
-main_title_color = "#007BFF" if st.session_state.theme == 'Dark' else "#31333F"
-st.markdown(f'<h1 style="background: -webkit-linear-gradient({main_title_color}, #9370DB); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-size: 3.5rem; font-weight: 900; margin-bottom: 0;">Creator Catalyst 🚀</h1>', unsafe_allow_html=True)
-st.markdown("### Creator Catalystへようこそ。")
-st.markdown("#### データという触媒を用いて、あなたのコンテンツを次のステージへ加速させます。")
+st.markdown('<h1 class="main-title-gradient">Creator Catalyst</h1>', unsafe_allow_html=True)
 
 if uploaded_file:
     try:
@@ -278,9 +272,14 @@ if uploaded_file:
     except Exception as e:
         st.error(f"解析中にエラーが発生しました: {str(e)}")
 else:
+    # Empty State: 役割分担に基づき、マスコットがメッセージを表示
     st.info("👈 左側のサイドバーから分析対象のレポート(CSV)をアップロードしてください。")
     st.markdown("""
-    ### 🐈‍⬛ Creative Catalyst Engine: Professional Edition
+    ### 🐈‍⬛ Creative Catalyst Agent: Ready to Start
     
-    あらゆる媒体・ジャンルのデータを瞬時に解析し、成長のための「触媒」となる具体的アクションを提案します。
+    Hi Creator! 私はあなたの専属エージェントです。
+    サイドバーからデータをアップロードしていただければ、すぐに私の「解析エンジン」がフル回転して、あなただけの成長戦略を提案します。
+    
+    準備ができたら教えてくださいね！
     """)
+    st.image("Creator_Catalyst_icon_transparent.png", width=200)
