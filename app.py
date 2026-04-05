@@ -22,17 +22,22 @@ with st.sidebar:
     is_dark = st.toggle("🌙 ダークモードに切り替え", value=(st.session_state.theme == 'Dark'))
     st.session_state.theme = 'Dark' if is_dark else 'Light'
     
-    # 1. ブランド & マスコット (背景透過版を採用)
-    st.markdown('<div class="mascot-container">', unsafe_allow_html=True)
+    # ブランドボックス全体のコンテナ
+    st.markdown('<div class="sidebar-brand-area">', unsafe_allow_html=True)
+    
+    # 1. マスコット (完全に中央配置するためのコンテナ)
+    st.markdown('<div class="mascot-wrapper">', unsafe_allow_html=True)
     try:
-        # 以前の Creator Catalyst icon.png (背景黒) から 透過済み PNG へ変更
-        st.image("Creator_Catalyst_icon_transparent.png", width=140)
+        st.image("Creator_Catalyst_icon_transparent.png", use_container_width=True)
     except:
-        st.markdown('<div style="width:140px;height:140px;background:#333;border-radius:50%;display:flex;align-items:center;justify-content:center;">Icon</div>', unsafe_allow_html=True)
+        st.markdown('<div style="width:160px;height:160px;background:#333;border-radius:50%;margin:auto;">Icon</div>', unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
     
-    st.markdown('<h2 class="brand-title">Creator Catalyst</h2>', unsafe_allow_html=True)
-    st.markdown('<p class="brand-subtitle">CONTENT ANALYTICS & GROWTH AI</p>', unsafe_allow_html=True)
+    # 2. タイトル & サブタイトル
+    st.markdown('<h1 class="brand-title-main">Creator Catalyst</h1>', unsafe_allow_html=True)
+    st.markdown('<p class="brand-subtitle-sub">CONTENT ANALYTICS<br>&<br>GROWTH AI</p>', unsafe_allow_html=True)
+    
+    st.markdown('</div>', unsafe_allow_html=True)
     
     st.divider()
     
@@ -61,7 +66,7 @@ with st.sidebar:
     success_manual = st.text_area("3. 成功体験・勝ちパターン（任意）", placeholder="例：冒頭で結論を言うと伸びる傾向がある")
 
 # --- Dynamic CSS Injection ---
-placeholder_css = """
+placeholder_styles = """
     ::placeholder, textarea::placeholder, input::placeholder {
         color: #888888 !important;
         opacity: 1 !important;
@@ -69,27 +74,55 @@ placeholder_css = """
     }
 """
 
-mascot_css = """
-    .mascot-container {
-        display: flex;
-        justify-content: center;
-        margin-bottom: 20px;
-        background-color: transparent !important;
+brand_styles = """
+    /* サイドバーブランドコンテナ */
+    .sidebar-brand-area {
+        text-align: center;
+        padding: 10px 0;
+        width: 100%;
     }
-    .mascot-container img {
-        background-color: transparent !important;
-        /* 背景透過 PNG のため mix-blend-mode: screen は不要 */
-        filter: drop-shadow(0 0 12px #007BFF) !important;
+    
+    /* マスコットの完全中央配置 */
+    .mascot-wrapper {
+        display: block;
+        margin-left: auto;
+        margin-right: auto;
+        width: 160px; /* サイズ固定 */
+        margin-bottom: 15px;
+    }
+    .mascot-wrapper img {
+        filter: drop-shadow(0 0 15px #007BFF) !important;
         border-radius: 50% !important;
-        padding: 5px;
+    }
+    
+    /* タイトル（より「タイトル」らしく） */
+    .brand-title-main {
+        font-size: 2.2rem !important; /* サイズアップ */
+        font-weight: 900 !important;
+        margin: 5px 0 !important;
+        letter-spacing: -1px !important;
+        text-align: center !important;
+    }
+    
+    /* サブタイトル（より「サブタイトル」らしく） */
+    .brand-subtitle-sub {
+        font-size: 0.7rem !important; /* 少し小さく */
+        font-weight: 600 !important;
+        letter-spacing: 3px !important; /* 文字間隔を広く */
+        line-height: 1.6 !important;
+        margin-top: 5px !important;
+        margin-bottom: 25px !important;
+        text-transform: uppercase;
+        opacity: 0.8 !important;
+        text-align: center !important;
     }
 """
 
 if st.session_state.theme == 'Dark':
     theme_css = f"""
     <style>
-        {placeholder_css}
-        {mascot_css}
+        {placeholder_styles}
+        {brand_styles}
         header, [data-testid="stHeader"], [data-testid="stSidebar"], .stApp, [data-testid="stSidebar"] > div {{
             background-color: #0E1117 !important;
         }}
@@ -101,11 +134,11 @@ if st.session_state.theme == 'Dark':
             color: #FFFFFF !important;
             border: 1px solid #444 !important;
         }}
-        .brand-title {{
-            text-align: center; font-weight: 900; color: #FFFFFF !important;
+        .brand-title-main {{
+            color: #FFFFFF !important;
         }}
-        .brand-subtitle {{
-            text-align: center; color: #007BFF !important; font-size: 0.85rem; letter-spacing: 1px;
+        .brand-subtitle-sub {{
+            color: #007BFF !important;
         }}
         .action-card {{
             background: linear-gradient(135deg, #1e293b, #0f172a);
@@ -117,8 +150,8 @@ if st.session_state.theme == 'Dark':
 else:
     theme_css = f"""
     <style>
-        {placeholder_css}
-        {mascot_css}
+        {placeholder_styles}
+        {brand_styles}
         .stApp, header, [data-testid="stHeader"], [data-testid="stSidebar"], [data-testid="stSidebar"] > div {{
             background-color: #FFFFFF !important;
         }}
@@ -134,11 +167,11 @@ else:
             color: #31333F !important;
             border: 1px solid #DDD !important;
         }}
-        .brand-title {{
-            text-align: center; font-weight: 900; color: #31333F !important;
+        .brand-title-main {{
+            color: #31333F !important;
         }}
-        .brand-subtitle {{
-            text-align: center; color: #007BFF !important; font-size: 0.85rem; letter-spacing: 1px;
+        .brand-subtitle-sub {{
+            color: #007BFF !important;
         }}
         .action-card {{
             background: #F8FAFC;
