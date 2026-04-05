@@ -18,11 +18,16 @@ class DataLoader:
         try:
             # 汎用的な読み込み（エンコーディングの試行）
             df = None
-            for encoding in ['utf-8-sig', 'shift-jis', 'cp932']:
+            encodings = ['utf-8-sig', 'cp932', 'shift_jis', 'utf-16']
+            for encoding in encodings:
                 try:
+                    # ストリームの位置をリセットするために再度オープンが必要
+                    # uploaded_fileの場合はseek(0)が必要
+                    if hasattr(file_path, 'seek'):
+                        file_path.seek(0)
                     df = pd.read_csv(file_path, encoding=encoding)
                     break
-                except UnicodeDecodeError:
+                except (UnicodeDecodeError, Exception):
                     continue
             
             if df is None:

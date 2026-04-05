@@ -27,7 +27,7 @@ class Analyzer:
             'wow_growth': wow_growth
         }
 
-        # 2. スパイク検知 (Z-score 基準)
+        # 2. ✨ あなたがバズった瞬間（スパイク検出）
         mean_val = df['metric'].mean()
         std_val = df['metric'].std()
         if std_val > 0:
@@ -42,12 +42,15 @@ class Analyzer:
                     'z_score': row['z_score']
                 })
 
-        # 3. トップコンテンツ（複数コンテンツがある場合）
+        # 3. 📈 伸びのきっかけになった動画（寄与度分析）
         if df['content'].nunique() > 1:
-            top_content = df.groupby('content')['metric'].sum().sort_values(ascending=False).head(5)
-            analysis_results['top_content'] = top_content.to_dict()
+            # Overall以外のコンテンツを集計
+            content_df = df[df['content'] != 'Overall']
+            if not content_df.empty:
+                top_content = content_df.groupby('content')['metric'].sum().sort_values(ascending=False).head(5)
+                analysis_results['top_content'] = top_content.to_dict()
 
-        # 4. 「触媒」アクション生成
+        # 4. 💡 次にやるといいこと（戦略提案 / アクションプラン）
         analysis_results['actions'] = self.generate_strategic_actions(df, analysis_results)
 
         return analysis_results
@@ -67,26 +70,26 @@ class Analyzer:
             
             # スパイクの要因分析（仮説）
             actions.append({
-                "title": f"【続編制作】「{spike_content}」の深掘り動画を即座に企画してください。",
-                "detail": f"データによると、直近の「{spike_content}」で統計的に有意なスパイク（期待値の約{recent_spike['z_score']:.1f}倍）を検知しました。このトピックは現在あなたの視聴者に極めて高い関心を持たれている『特異点』です。同じ切り口、または逆の視点での続編を48時間以内に構成しましょう。"
+                "title": f"【続編制作】「{spike_content}」の深掘り（リテンション / 継続率向上）",
+                "detail": f"データによると、直近の「{spike_content}」で統計的に有意なバズ（スパイク）を検知しました。このトピックは視聴者の関心が極めて高い『特異点』です。同じ切り口、または逆の視点での続編を48時間以内に構成し、ファンの定着（リテンション）を狙いましょう。"
             })
         
         # ロジック2: 全体的な傾向（WoW%が正の場合）
         if metrics['wow_growth'] > 10:
              actions.append({
-                "title": "【拡散ブースト】直近絶好調の波を活かし、ショート動画/SNS展開を強化してください。",
-                "detail": f"前週比+{metrics['wow_growth']:.1f}%の急成長を見せています。メインコンテンツの中から『最もエンゲージメントの高い15秒』を切り出し、各プラットフォームへ展開することで、この成長曲線をさらに上振れさせることが可能です。"
+                "title": "【拡散ブースト】ショート展開による新規流入（新規獲得 / アクquisition）",
+                "detail": f"前週比+{metrics['wow_growth']:.1f}%の急成長を記録しています。メインコンテンツの中から『最も心が躍る瞬間（キラーコンテンツ）』を切り出し、ショート動画へ展開することで、爆発的な新規層の獲得が可能です。"
             })
         else:
             actions.append({
-                "title": "【投稿スケジュールの最適化】過去のデータに基づき、21時に投稿時間を固定してください。",
-                "detail": "現在、成長が安定フェーズに入っています。視聴者のライフスタイルに合わせた『21時』に投稿を固定することで、初動の視聴密度を高め、YouTubeのアルゴリズムに好影響を与えることができます。"
+                "title": "【安定成長】21時の投稿固定（エンゲージメント最適化）",
+                "detail": "現在、成長が安定フェーズにあります。視聴者のライフスタイルに合わせた『21時』に投稿を固定することで、初動の視聴密度（エンゲージメント密度）を高め、アルゴリズムによる推奨を強化できます。"
             })
 
         # ロジック3: クオリティ/CTA
         actions.append({
-            "title": "【視聴持続率の改善】冒頭15秒の「PREP法」導入",
-            "detail": "次の動画/記事では、『結論（P）→理由（R）→具体例（E）→結論（P）』の構成を徹底してください。特に冒頭で『この動画を見ることで得られる具体的なメリット』を3つ提示することで、離脱率を10%改善できる余地があります。"
+            "title": "【視聴維持率の改善】冒頭15秒でのメリット提示（PREP法）",
+            "detail": "次の動画/記事では、『冒頭ですぐに結論を言う（P）』構成を徹底してください。視聴者が『この動画を見続けてくれる割合（視聴維持率）』を10%改善できる余地があります。"
         })
 
         return actions[:3] # 常に3つ返す
