@@ -19,7 +19,11 @@ if 'theme' not in st.session_state:
 
 # --- Sidebar: Universal & Theme Workflow ---
 with st.sidebar:
+    # ユーザー指示に基づき、トグルを特定のコンテナで識別できるようにする
+    st.markdown('<div class="theme-toggle-container">', unsafe_allow_html=True)
     is_dark = st.toggle("🌙 ダークモードに切り替え", value=(st.session_state.theme == 'Dark'))
+    st.markdown('</div>', unsafe_allow_html=True)
+    
     st.session_state.theme = 'Dark' if is_dark else 'Light'
     
     st.markdown('<div class="sidebar-brand-area">', unsafe_allow_html=True)
@@ -63,12 +67,12 @@ with st.sidebar:
     success_manual = st.text_area("3. 成功体験・勝ちパターン（任意）", placeholder="例：冒頭で結論を言うと伸びる傾向がある")
 
 # --- Dynamic CSS Injection ---
-placeholder_styles = """
-    ::placeholder, textarea::placeholder, input::placeholder {
+placeholder_styles = f"""
+    ::placeholder, textarea::placeholder, input::placeholder {{
         color: #888888 !important;
         opacity: 1 !important;
         -webkit-text-fill-color: #888888 !important;
-    }
+    }}
 """
 
 brand_styles = """
@@ -101,14 +105,6 @@ brand_styles = """
         margin-bottom: 20px;
         line-height: 1.2;
         display: inline-block;
-    }
-    
-    /* 常時表示を確保するための複数の堅牢なセレクター（トグルの外枠） */
-    div[data-testid="stSidebar"] div[data-testid="stCheckbox"] label div:first-child,
-    div[data-testid="stSidebar"] div[data-testid="stToggle"] label div:first-child,
-    div[data-testid="stSidebar"] label div[class*="st-bg"] {
-        border: 1px solid #999999 !important;
-        box-shadow: 0 0 0 1px #999999 !important; /* border 以外のアプローチも追加 */
     }
 """
 
@@ -174,6 +170,30 @@ else:
             background: #F8FAFC;
             padding: 25px; border-radius: 15px; border: 1px solid #E2E8F0; margin: 15px 0;
             box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }}
+        
+        /* 【UI Polish】トグルボタンの背景限定装飾と不要な枠線の完全削除 */
+        div[data-testid="stCheckbox"] {{
+            background-color: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+            padding: 0 !important;
+        }}
+        /* トグルスイッチの「レール（背景）」部分のみに装飾を限定 */
+        div[data-testid="stCheckbox"] label[data-baseweb="checkbox"] > div {{
+            border: 1px solid #CCCCCC !important;
+            background-color: #EEEEEE !important;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05) !important;
+        }}
+        /* ラベル（文字）の背景を透明化 */
+        div[data-testid="stCheckbox"] label {{
+            background-color: transparent !important;
+        }}
+        div[data-testid="stCheckbox"] label p {{
+            color: #31333F !important;
+            font-size: 0.9rem !important;
+            margin-left: 5px !important;
+            font-weight: 500 !important;
         }}
     </style>
     """
