@@ -82,8 +82,9 @@ brand_styles = """
     .logo-wrapper {
         display: block; margin-left: auto; margin-right: auto; width: 160px; margin-bottom: 15px;
     }
-    .logo-wrapper img {
+    .logo-wrapper img, .mascot-wrapper img {
         filter: drop-shadow(0 0 15px #007BFF) !important;
+        mix-blend-mode: screen;
     }
     .brand-title-main {
         font-size: 2.2rem !important; font-weight: 900 !important; margin: 5px 0 !important;
@@ -172,28 +173,21 @@ else:
             box-shadow: 0 4px 12px rgba(0,0,0,0.05);
         }}
         
-        /* 【UI Polish】トグルボタンの背景限定装飾と不要な枠線の完全削除 */
-        div[data-testid="stCheckbox"] {{
+        /* 1. スイッチと文字を包むすべての親要素を透明化 */
+        div[data-testid="stCheckbox"], 
+        div[data-testid="stCheckbox"] > label, 
+        div[data-testid="stCheckbox"] div[data-testid="stMarkdownContainer"] {{
             background-color: transparent !important;
+            background: transparent !important;
             border: none !important;
             box-shadow: none !important;
-            padding: 0 !important;
         }}
-        /* トグルスイッチの「レール（背景）」部分のみに装飾を限定 */
-        div[data-testid="stCheckbox"] label[data-baseweb="checkbox"] > div {{
-            border: 1px solid #CCCCCC !important;
-            background-color: #EEEEEE !important;
+
+        /* 2. トグルスイッチの「レール（背景）」部分だけに装飾を適用 */
+        div[data-testid="stCheckbox"] div[role="switch"] {{
+            border: 1px solid #CCCCCC !important; /* レールだけを薄く囲う */
+            background-color: #EEEEEE !important; /* レールの中にだけ色をつける */
             box-shadow: 0 1px 2px rgba(0,0,0,0.05) !important;
-        }}
-        /* ラベル（文字）の背景を透明化 */
-        div[data-testid="stCheckbox"] label {{
-            background-color: transparent !important;
-        }}
-        div[data-testid="stCheckbox"] label p {{
-            color: #31333F !important;
-            font-size: 0.9rem !important;
-            margin-left: 5px !important;
-            font-weight: 500 !important;
         }}
     </style>
     """
@@ -302,4 +296,6 @@ else:
     
     準備ができたら教えてくださいね！
     """)
+    st.markdown('<div class="mascot-wrapper">', unsafe_allow_html=True)
     st.image("Creator_Catalyst_icon_transparent.png", width=200)
+    st.markdown('</div>', unsafe_allow_html=True)

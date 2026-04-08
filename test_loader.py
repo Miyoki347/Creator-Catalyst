@@ -18,7 +18,7 @@ def test():
         print("SUCCESS: '合計' row removed.")
         
     # Check for formatting of 'metric' (viewer counts with commas)
-    if (df['metric'] > 1000).any():
+    if (df['metric_value'] > 1000).any():
         print("SUCCESS: Numeric values with commas were correctly parsed.")
     else:
         print("FAILED: Numeric values with commas missed!")
