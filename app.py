@@ -4,6 +4,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 from data_loader import loader
 from analyzer import analyzer
+import io
 
 # --- Page Config ---
 st.set_page_config(
@@ -42,16 +43,26 @@ with st.sidebar:
     
     st.divider()
     
-    st.markdown("#### 🌍 媒体・ジャンル設定")
+    st.markdown("#### 🌍 戦略的分析コンテキスト")
     platform = st.selectbox(
-        "分析対象の媒体 (Platform)", 
-        ["YouTube", "note", "X(Twitter)", "ブログ/Webメディア", "その他"],
+        "A. コンテンツ形式 (Format)", 
+        ["動画（YouTube/ニコニコ等）", "記事（note/ブログ/Zenn等）", "ライブ配信（Twitch等）", "素材販売（BOOTH/FANBOX等）", "スキル提供（ココナラ等）", "その他"],
         index=0
     )
     genre = st.selectbox(
-        "コンテンツの系統 (Genre)",
-        ["音楽/アート", "教育/解説", "エンタメ/ゲーム", "ビジネス/教養", "日常/Vlog", "創作小説/エッセイ", "その他"],
-        index=0
+        "B. ジャンル (Genre)",
+        ["エンタメ", "音楽/BGM", "教育/解説", "ビジネス/教養", "創作（小説/イラスト）", "ゲーム実況", "日常/Vlog", "その他"],
+        index=2
+    )
+    core_desire = st.selectbox(
+        "C. ターゲットの欲求 (Core Desire)",
+        ["生存・欲望（稼ぎたい等）", "承認・自己実現（賢くなりたい等）", "娯楽・逃避（癒やされたい等）", "愛・帰属（仲間が欲しい等）", "恐怖・回避（失敗したくない等）"],
+        index=1
+    )
+    goal = st.selectbox(
+        "D. 分析目的 (Goal)",
+        ["認知拡大（バズ狙い）", "即時収益化（成約重視）", "資産構築（ストック性重視）"],
+        index=2
     )
     
     st.divider()
@@ -61,10 +72,53 @@ with st.sidebar:
     
     st.divider()
     
-    st.markdown("#### 🧠 クリエイター・インサイト設定")
-    target_audience = st.text_input("1. ターゲット層（誰に届けたいか）", placeholder="例：20代の音楽制作に関心がある人")
-    pain_points = st.text_area("2. 現在の悩み（具体的に）", placeholder="例：視聴維持率が2分で急落してしまう")
-    success_manual = st.text_area("3. 成功体験・勝ちパターン（任意）", placeholder="例：冒頭で結論を言うと伸びる傾向がある")
+    st.markdown("#### 🧠 クリエイター・インサイト")
+    target_audience = st.text_input("1. ターゲット層", placeholder="例：20代の音楽制作に関心がある人")
+    pain_points = st.text_area("2. 現在の悩み", placeholder="例：視聴維持率が2分で急落してしまう")
+    success_manual = st.text_area("3. 成功パターン（任意）", placeholder="例：冒頭で結論を言うと伸びる傾向がある")
+    
+    st.divider()
+    
+    # 🧪 テストデータ生成ダッシュボード
+    st.markdown("#### 🧪 開発・検証用ツール")
+    if st.button("🧪 テストデータを生成", use_container_width=True):
+        import datetime
+        import random
+        
+        # ジャンル別シナリオの設定
+        if "音楽" in genre:
+            view_range = (200, 800)
+            dur_range = (300, 600) # 5-10分
+            ctr_range = (2, 5)
+        elif "教育" in genre or "ビジネス" in genre:
+            view_range = (1500, 4000)
+            dur_range = (90, 240)  # 1.5-4分
+            ctr_range = (8, 18)
+        else:
+            view_range = (500, 2000)
+            dur_range = (120, 300)
+            ctr_range = (4, 10)
+            
+        # 擬似データ生成（CSV文字列として作成し、loaderのクレンジングをテスト）
+        csv_rows = ["日付,コンテンツ名,インプレッション,視聴回数（PV）,CTR(%),平均視聴時間"]
+        for i in range(14):
+            date_str = (datetime.date.today() - datetime.timedelta(days=14-i)).strftime("%Y-%m-%d")
+            views = random.randint(*view_range)
+            # カンマの罠
+            views_str = f'"{views:,}"' if random.random() > 0.5 else str(views)
+            ctr = random.uniform(*ctr_range)
+            imps = int(views / (ctr/100))
+            # 時間形式の罠
+            secs = random.randint(*dur_range)
+            dur_str = f"{secs//3600:01}:{ (secs%3600)//60:02}:{secs%60:02}"
+            
+            csv_rows.append(f"{date_str},コンテンツ_{i+1},{imps},{views_str},{ctr:.2f}%,{dur_str}")
+        
+        # 合計行の罠
+        csv_rows.append("合計,サマリー,999999,99999,5.00%,0:10:00")
+        
+        st.session_state.test_data = "\n".join(csv_rows)
+        st.toast("テストデータを生成しました。解析を開始します！", icon="🧪")
 
 # --- Dynamic CSS Injection ---
 placeholder_styles = f"""
@@ -83,12 +137,13 @@ brand_styles = """
         display: block; margin-left: auto; margin-right: auto; width: 160px; margin-bottom: 15px;
     }
     .logo-wrapper img, .mascot-wrapper img {
-        filter: drop-shadow(0 0 15px #007BFF) !important;
-        mix-blend-mode: screen;
+        filter: drop-shadow(0 0 20px #007BFF) !important;
+        mix-blend-mode: screen !important;
+        background-color: transparent !important;
     }
     .brand-title-main {
         font-size: 2.2rem !important; font-weight: 900 !important; margin: 5px 0 !important;
-        letter-spacing: -1px !important; text-align: center !important;
+        letter-spacing: -1px !important; text-align: center !important; text-transform: uppercase;
     }
     .brand-subtitle-sub {
         font-size: 0.7rem !important; font-weight: 600 !important; letter-spacing: 3px !important;
@@ -97,6 +152,7 @@ brand_styles = """
     }
     .main-title-gradient {
         background: linear-gradient(to right, #007BFF, #9370DB);
+        -webkit-background-clip: text;
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         background-clip: text;
@@ -114,19 +170,41 @@ if st.session_state.theme == 'Dark':
     <style>
         {placeholder_styles}
         {brand_styles}
-        header, [data-testid="stHeader"], [data-testid="stSidebar"], .stApp, [data-testid="stSidebar"] > div {{
+        /* 強制CSS適用：トータル・ブラックアウト */
+        header[data-testid="stHeader"], .stApp, section[data-testid="stSidebar"] {{
             background-color: #0E1117 !important;
         }}
-        [data-testid="stSidebar"] label, [data-testid="stSidebar"] p, [data-testid="stSidebar"] span, .stMarkdown, h1, h2, h3, h4, h5, h6, p, label {{
+        /* サイドバー視認性修正 */
+        section[data-testid="stSidebar"] {{
+            background-color: #0E1117 !important;
             color: #FFFFFF !important;
+            border-right: 1px solid #333333 !important;
+        }}
+        section[data-testid="stSidebar"] .stMarkdown, 
+        section[data-testid="stSidebar"] label, 
+        section[data-testid="stSidebar"] span,
+        section[data-testid="stSidebar"] p {{
+            color: #FFFFFF !important;
+        }}
+        /* ファイルアップロード / 入力エリア */
+        div[data-testid="stFileUploadDropzone"] {{
+            background: #1E1E1E !important;
+            color: #FFFFFF !important;
+            border: 1px dashed #444 !important;
         }}
         div[data-baseweb="select"] > div, div[data-baseweb="base-input"], textarea, input {{
             background-color: #1E1E1E !important;
             color: #FFFFFF !important;
             border: 1px solid #444 !important;
         }}
-        [data-testid="stFileUploader"] label p, [data-testid="stFileUploader"] section div {{
+        /* テキスト色強制 */
+        label, p, span, h1, h2, h3, h4, h5, h6, .stMarkdown {{
             color: #FFFFFF !important;
+        }}
+        /* メトリクス表示の最適化 */
+        [data-testid="stMetricLabel"] p {{
+            color: #E0E0E0 !important;
+            font-size: 1rem !important;
         }}
         .brand-title-main {{
             color: #FFFFFF !important;
@@ -146,18 +224,28 @@ else:
     <style>
         {placeholder_styles}
         {brand_styles}
-        .stApp, header, [data-testid="stHeader"], [data-testid="stSidebar"], [data-testid="stSidebar"] > div {{
+        /* ライトモードでもサイドバー視認性を確保 */
+        .stApp, header, [data-testid="stHeader"] {{
             background-color: #FFFFFF !important;
         }}
-        h1, h2, h3, h4, h5, h6, p, label, span, .stMarkdown, [data-testid="stSidebar"] p, [data-testid="stSidebar"] label {{
+        section[data-testid="stSidebar"] {{
+            background-color: #F8FAFC !important;
+            border-right: 1px solid #E2E8F0 !important;
+        }}
+        section[data-testid="stSidebar"] .stMarkdown, 
+        section[data-testid="stSidebar"] label, 
+        section[data-testid="stSidebar"] span,
+        section[data-testid="stSidebar"] p {{
             color: #31333F !important;
         }}
-        [data-testid="stFileUploader"] label p {{
+        h1, h2, h3, h4, h5, h6, p, label, .stMarkdown {{
             color: #31333F !important;
-            font-weight: bold !important;
+        }}
+        [data-testid="stMetricLabel"] p {{
+            color: #666666 !important;
         }}
         div[data-baseweb="select"] > div, div[data-baseweb="base-input"], textarea, input {{
-            background-color: #F0F2F6 !important;
+            background-color: #FFFFFF !important;
             color: #31333F !important;
             border: 1px solid #DDD !important;
         }}
@@ -172,41 +260,34 @@ else:
             padding: 25px; border-radius: 15px; border: 1px solid #E2E8F0; margin: 15px 0;
             box-shadow: 0 4px 12px rgba(0,0,0,0.05);
         }}
-        
-        /* 1. スイッチと文字を包むすべての親要素を透明化 */
-        div[data-testid="stCheckbox"], 
-        div[data-testid="stCheckbox"] > label, 
-        div[data-testid="stCheckbox"] div[data-testid="stMarkdownContainer"] {{
-            background-color: transparent !important;
-            background: transparent !important;
-            border: none !important;
-            box-shadow: none !important;
-        }}
-
-        /* 2. トグルスイッチの「レール（背景）」部分だけに装飾を適用 */
-        div[data-testid="stCheckbox"] div[role="switch"] {{
-            border: 1px solid #CCCCCC !important; /* レールだけを薄く囲う */
-            background-color: #EEEEEE !important; /* レールの中にだけ色をつける */
-            box-shadow: 0 1px 2px rgba(0,0,0,0.05) !important;
-        }}
     </style>
     """
 
 st.markdown(theme_css, unsafe_allow_html=True)
 
 # --- Main Page Content ---
-st.markdown('<h1 class="main-title-gradient">Creator Catalyst</h1>', unsafe_allow_html=True)
+st.markdown('<h1 class="main-title-gradient">Creator Catalyst 🚀</h1>', unsafe_allow_html=True)
+st.markdown("#### コンテンツ成長AIエンジン：CatScope")
 
-if uploaded_file:
+# --- Analysis Flow ---
+# アップロードまたはテストデータの有無を確認
+target_input = uploaded_file if uploaded_file else (io.StringIO(st.session_state.test_data) if 'test_data' in st.session_state else None)
+
+if target_input:
     try:
-        load_result = loader.load_csv(uploaded_file)
+        load_result = loader.load_csv(target_input)
         df = load_result['data']
         has_date = load_result['has_date']
         
         analysis = analyzer.analyze_data(
             df, has_date=has_date, platform=platform, genre=genre,
+            core_desire=core_desire, goal=goal,
             target_audience=target_audience, pain_points=pain_points, success_manual=success_manual
         )
+        
+        # テストデータ使用中の警告
+        if not uploaded_file and 'test_data' in st.session_state:
+            st.warning("⚠️ 現在、テスト用に生成された擬似データを使用しています。")
         
         st.subheader(f"📊 {platform} × {genre} 分析レポート")
         col1, col2, col3, col4 = st.columns(4)
@@ -297,5 +378,14 @@ else:
     準備ができたら教えてくださいね！
     """)
     st.markdown('<div class="mascot-wrapper">', unsafe_allow_html=True)
-    st.image("Creator_Catalyst_icon_transparent.png", width=200)
+    try:
+        # 指示に従い、黒背景のあるアイコンを screen 合成で配置
+        st.image("Creator Catalyst icon.png", width=240)
+    except:
+        st.image("Creator_Catalyst_icon_transparent.png", width=240)
     st.markdown('</div>', unsafe_allow_html=True)
+
+# --- Startup Message ---
+if 'startup_msg_shown' not in st.session_state:
+    st.toast("Creator Catalyst：戦略・市場分析エンジン起動。あなたのコンテンツを市場の『資産』へ変換します。", icon="🐈‍⬛")
+    st.session_state.startup_msg_shown = True

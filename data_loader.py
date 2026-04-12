@@ -3,12 +3,14 @@ import numpy as np
 
 class DataLoader:
     def __init__(self):
-        # ユニバーサル・カラムマッピング（あらゆる媒体に対応）
+        # 多角的カラムマッピング（各媒体の個別指標に対応）
         self.column_mapping = {
             'date': ['日付', 'date', 'day', '作成日', '公開日', '年月日', '日次', '掲載日', 'timestamp', '公開時刻', '投稿日', '作成日時'],
-            'metric_value': [
-                '視聴回数', 'ビュー数', '閲覧数', 'views', '視聴数', 'スキ数', 'likes', 'アクセス数', 'pv', '再生回数', 
-                '再生数', 'クリック数', 'ctr', 'インプレッション', 'インプ', '閲覧', '読了数', 'リプライ数', '固定表示数'
+            'views': ['視聴回数', 'ビュー数', '閲覧数', 'views', '視聴数', '再生回数', '再生数', '固定表示数'],
+            'ctr': ['クリック率', 'ctr', 'クリック率(%)', 'ctr(%)', 'クリックスルー率'],
+            'duration': ['平均視聴時間', '平均再生時間', '滞在時間', 'duration', 'average duration', '視聴維持'],
+            'metric_value': [ # フォールバック（他の主要な数値）
+                'スキ数', 'likes', 'アクセス数', 'pv', 'クリック数', 'インプレッション', 'インプ', '閲覧', '読了数', 'リプライ数'
             ],
             'content': ['タイトル', 'title', 'コンテンツ名', '動画', '記事タイトル', '動画タイトル', '動画のタイトル', '記事名', '名前', 'name', 'アイテム', '作品名']
         }
@@ -54,8 +56,9 @@ class DataLoader:
             if df is None:
                 raise ValueError("CSVデータの読み込みに失敗しました。")
 
-            # 合計行、サマリー行を確実に除外
-            mask = df.apply(lambda row: row.astype(str).str.contains('合計|Total|サマリー', case=False).any(), axis=1)
+            # 合計行、サマリー行、または特定のノイズを高い精度で除外
+            noise_patterns = ['合計', 'Total', 'サマリー', '総計', '平均', 'Average', 'Summary']
+            mask = df.apply(lambda row: row.astype(str).str.contains('|'.join(noise_patterns), case=False).any(), axis=1)
             df = df[~mask].reset_index(drop=True)
 
             return self.normalize_dataframe(df)
@@ -98,21 +101,50 @@ class DataLoader:
             normalized_df['date'] = pd.to_datetime(normalized_df['date'], errors='coerce')
             normalized_df = normalized_df.dropna(subset=['date'])
 
-        # 2. メトリクスの数値化（クレンジング徹底）
-        if 'metric_value' in normalized_df.columns:
-            if normalized_df['metric_value'].dtype == object:
-                # カンマ、％、空白を確実に除去
-                clean_v = normalized_df['metric_value'].astype(str).str.replace(r'[,\%\s]', '', regex=True)
-                normalized_df['metric_value'] = clean_v.apply(self.convert_duration_to_seconds)
-            
-            normalized_df['metric_value'] = pd.to_numeric(normalized_df['metric_value'], errors='coerce').fillna(0.0)
+        # 2. メトリクスの数値化（クレンジング徹底：カンマ、%、空白、および時間形式の対応）
+        numeric_targets = ['views', 'ctr', 'duration', 'metric_value']
+        for target in numeric_targets:
+            if target in normalized_df.columns:
+                if normalized_df[target].dtype == object:
+                    # 文字列をクレンジング
+                    def clean_numeric(val):
+                        val_str = str(val).strip()
+                        # 時間形式（コロンを含む）なら秒数へ
+                        if ':' in val_str:
+                            return self.convert_duration_to_seconds(val_str)
+                        # 記号除去
+                        import re
+                        clean_v = re.sub(r'[,\%\s\¥\$]', '', val_str)
+                        try:
+                            return float(clean_v)
+                        except:
+                            return 0.0
+                    
+                    normalized_df[target] = normalized_df[target].apply(clean_numeric)
+                
+                normalized_df[target] = pd.to_numeric(normalized_df[target], errors='coerce').fillna(0.0)
+
+        # 互換性担保: metric_value がない場合、最有力な数値を割り当てる
+        if 'metric_value' not in normalized_df.columns or normalized_df['metric_value'].sum() == 0:
+            for p in ['views', 'pv', '閲覧数']:
+                if p in normalized_df.columns:
+                    normalized_df['metric_value'] = normalized_df[p]
+                    break
+        
+        # 最終フォールバック
+        if 'metric_value' not in normalized_df.columns:
+            for col in normalized_df.select_dtypes(include=[np.number]).columns:
+                if col not in ['views', 'ctr', 'duration']:
+                    normalized_df['metric_value'] = normalized_df[col]
+                    break
 
         # 3. コンテンツ名のデフォルト補完
         if 'content' not in normalized_df.columns:
             normalized_df['content'] = 'Overall'
         
         # 最終的な合計行チェック（正規化後の列内容も考慮）
-        mask = normalized_df.apply(lambda row: row.astype(str).str.contains('合計|Total', case=False).any(), axis=1)
+        noise_patterns = ['合計', 'Total', '総計']
+        mask = normalized_df.apply(lambda row: row.astype(str).str.contains('|'.join(noise_patterns), case=False).any(), axis=1)
         normalized_df = normalized_df[~mask]
 
         return {
